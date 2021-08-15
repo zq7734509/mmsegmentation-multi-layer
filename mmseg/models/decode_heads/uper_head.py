@@ -136,9 +136,9 @@ class UPerHead(BaseDecodeHead):
         super(UPerHead, self).__init__(
             input_transform='multiple_select', **kwargs)
 
-        self.use_SE_net = True
+        self.use_SE_net = False
         self.use_ASPP = False
-        self.use_boundary = False
+        self.use_boundary = True
         self.SE_visualize = True
         if self.use_ASPP:
             # ASPP Module
