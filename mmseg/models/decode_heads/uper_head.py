@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import numpy as np
+import matplotlib.pyplot as plt
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 import torch.nn.functional as F
 from mmseg.ops import resize
@@ -134,9 +136,10 @@ class UPerHead(BaseDecodeHead):
         super(UPerHead, self).__init__(
             input_transform='multiple_select', **kwargs)
 
-        self.use_SE_net = False
+        self.use_SE_net = True
         self.use_ASPP = False
         self.use_boundary = False
+        self.SE_visualize = True
         if self.use_ASPP:
             # ASPP Module
             self.aspp_modules = DepthwiseSeparableASPPHead(c1_in_channels,
@@ -316,9 +319,22 @@ class UPerHead(BaseDecodeHead):
             fpn_weight = torch.sigmoid(fpn_weight)
             fpn_outs_concat = fpn_outs_concat * fpn_weight
             fpn_outs_concat = fpn_outs_concat.contiguous()
-
+            if self.SE_visualize:
+                first_batch_channel_weight = fpn_weight[0].cpu().detach().numpy()
+                channel_weight = np.squeeze(first_batch_channel_weight)
+                x_axis = np.arange(1,len(channel_weight)+1,1)
+                plt.scatter(x_axis, channel_weight, s=1)
+                wait_for_sum = []
+                print('')
+                for i in range(0,4,1):
+                    tmp = channel_weight[i*512 : (i+1)*512]
+                    wait_for_sum.append(sum(tmp))
+                    print(sum(tmp))
+                plt.show()
         output = self.fpn_bottleneck(fpn_outs_concat)
-        # output = self.DWS(output)
+
+        if self.use_SE_net:
+            output = self.DWS(output)
 
         if self.use_boundary:
             boundary_concat = []
@@ -334,6 +350,21 @@ class UPerHead(BaseDecodeHead):
             boundary_channel_weight = torch.sigmoid(boundary_channel_weight)
             boundary_concat = boundary_concat * boundary_channel_weight
             boundary_concat = boundary_concat.contiguous()
+
+            if self.SE_visualize:
+                first_batch_channel_weight = boundary_channel_weight[0].cpu().detach().numpy()
+                channel_weight = np.squeeze(first_batch_channel_weight)
+                x_axis = np.arange(1,len(channel_weight)+1,1)
+                plt.scatter(x_axis, channel_weight, s=1)
+                sum_1 = sum(channel_weight[0 : 128])
+                sum_2 = sum(channel_weight[128 : 640])
+                sum_3 = sum(channel_weight[640 : 1152])
+                print('')
+                print(sum_1/128)
+                print(sum_2/512)
+                print(sum_3/512)
+                plt.show()
+
 
             # 进行降维和稳定操作
             boundary_concat = self.boudary_bottleneck_1x1(boundary_concat)
