@@ -102,8 +102,8 @@ class DepthwiseSeparableASPPHead(ASPPHead):
 
         # self.return_aspp = output
 
-        output_binary = self.cls_binary_seg(output)
-        # output_binary = None
+        # output_binary = self.cls_binary_seg(output)
+        output_binary = None
         output_seg = self.cls_seg(output)
 
         return output_seg, output_binary
